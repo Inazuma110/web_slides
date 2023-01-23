@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>A Tutorial on Spectral Clustering</title>
+
+    <link rel="stylesheet" href="../reveal.js/dist/reset.css">
+    <link rel="stylesheet" href="../reveal.js/dist/reveal.css">
+    <link rel="stylesheet" href="../reveal.js/dist/theme/black.css">
+
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="../../plugin/highlight/monokai.css">
+    <style>
+/* split slide */
+#right {left: -18.33%; text-align: left; float: left; width: 50%; z-index: -10;}
+#left  {left:  31.25%; text-align: left; float: left; width: 50%; z-index: -10;}
+    </style>
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section data-markdown>
+          <textarea data-template>
+
+<style>
+/* split slide */
+#right {left: -18.33%; text-align: left; float: left; width: 50%; z-index: -10;}
+#left  {left:  31.25%; text-align: left; float: left; width: 50%; z-index: -10;}
+</style>
+
+
+# [A Tutorial on Spectral Clustering](https://arxiv.org/pdf/0711.0189.pdf)
+M2 伊藤
+
+---
+
+## 準備
+
+---
+
+## グラフとは？
+
+![](https://i.imgur.com/4t80uAw.png)
+
+[グラフ理論入門](https://qiita.com/maskot1977/items/e1819b7a1053eb9f7d61)より引用
+
+---
+
+## グラフの汎用性
+
+<small>
+<div id="left">
+この世のものはたいていグラフで表せる
+→いろんな研究に応用可能
+
+- SNSのフォロー関係
+- 地図
+- 分子構造
+- ゲーム理論
+- ディレクトリ構造
+- 構文
+- ニューラルネットワーク
+
+</div>
+
+<div id="right">
+
+様々なアルゴリズムが利用可能
+
+- 最短距離
+    - ダイクストラ
+    - ワーシャル=フロイド法など
+- Graph Neural Network
+    - 埋め込みさえ得られれば色々できる
+- スペクトラルグラフ理論
+- グラフ分解
+- マッチング
+
+などなど
+
+
+
+</div>
+</small>
+
+---
+
+![](https://i.imgur.com/qzxInNe.png)
+
+[NRI用語解説](https://www.nri.com/jp/knowledge/glossary/lst/ta/deep_learning)より引用
+
+
+---
+
+## Word2VecとNode2Vec
+
+- word2vec
+    - 意味を考慮して単語の足し引き，類似度などを計算したい
+    - 単語をベクトルに変換して実現
+- node2vec
+    - 単語ではなく，Node(頂点)のベクトル表現を得る手法
+    - word2vecから着想を得ている
+
+自然言語もグラフなのでお互い応用できることが多い
+
+---
+
+## 自然言語もグラフ
+
+- I eat apples.
+- They eat bananas.
+
+<br>
+
+```graphviz
+graph g{
+   I -- eat
+   eat -- apples
+   I -- apples
+   They -- eat
+   eat -- bananas
+   They -- bananas
+}
+```
+
+自然言語をグラフとして表すことができる
+
+---
+
+## クラスタリングとは
+
+- データを分類すること
+    - ただし，教師データが存在<font color="red">**しない**</font>
+    - グループが何個あるかすらわからない(ことが多い)
+- 有名な手法
+    - $K$-means法
+    - **スペクトラルクラスタリング**
+        -  ↑ 今回扱う手法
+
+---
+
+## グラフクラスタリング
+
+- 密な頂点集合の抽出
+- 切断されるエッジが少なくする
+- クラスタ内のエッジは多くする
+- いい塩梅のサイズのクラスタを作る
+    - シングルトンは好ましくない
+
+---
+
+![](https://i.imgur.com/4rr3p8c.png)
+
+
+---
+
+## 論文紹介
+
+---
+
+## 記号の定義1
+
+- グラフ: $G=(V, E)$
+    - 頂点集合: $V$
+    - エッジ集合: $E$
+    - 頂点の数: $N=|V|$
+    - エッジの数: $M=|E|$
+
+---
+
+## 例
+- $V = \{1, 2, 3, 4, 5, 6\}$
+- $N=6$
+- $M=7$
+
+![](https://i.imgur.com/DuPNsmL.png)
+グラフ$G$
+
+
+---
+
+## 記号の定義2
+- 重み(隣接行列): $W$
+    - $w_{ij}$: 頂点$i$と$j$を接続するエッジの重み
+    - $w_{ij}=0$は，$i$と$j$が接続されていないことを表す
+    - $w_{ij}$が0か1以外の値を取るとき，重みつきグラフという(今回は扱わない)
+- 次数: $d_i$
+    - 頂点$i$に何本のエッジが接続されているか
+
+
+---
+
+## 例
+<div id="left">
+
+![](https://i.imgur.com/DuPNsmL.png)
+
+</div>
+
+<div id="right">
+
+`$W = \begin{pmatrix}
+0 & 1 & 0 & 0 & 1 & 0 \\
+1 & 0 & 1 & 0 & 1 & 0 \\
+0 & 1 & 0 & 1 & 0 & 0 \\
+0 & 0 & 1 & 0 & 1 & 1 \\
+1 & 1 & 0 & 1 & 0 & 0 \\
+0 & 0 & 0 & 1 & 0 & 0 \\
+\end{pmatrix}$`
+<br>
+$d = [2, 3, 2, 3, 3, 1]$
+
+</div>
+
+---
+
+## 類似性グラフ
+
+### Similarity Graph
+
+---
+
+こういうのはどうする？
+
+![](https://i.imgur.com/WCtBvCI.jpg)
+https://atmarkit.itmedia.co.jp/ait/articles/2206/13/news032.html より引用
+
+---
+
+### グラフデータに変形しよう！！
+
+---
+
+
+## 様々なSimilarity Graph1
+
+任意の頂点間の距離(ユークリッド距離など)からグラフを作る
+
+- $\epsilon$-neighborhood graph
+    - 距離が$\epsilon$以下の頂点同士にエッジを貼る
+    - あまり使われないけど一番簡単(直感的？)
+
+---
+
+## 様々なSimilarity Graph2
+- $k$-nearest neighbor graph
+    - それぞれの頂点から，最も距離が小さい$k$個の頂点にエッジを貼る
+    - 多分1番一般的
+- Fully Graph
+    - 距離を重みとしてすべての頂点同士にエッジを貼る
+    - 情報量は多いが密なグラフになるためあまり使われない
+
+---
+
+## グラフラプラシアン
+
+---
+
+## グラフラプラシアン
+
+- ベクトル解析におけるラプラス作用素をグラフに応用したもの
+- ラプラシアン行列はグラフの様々な特性を隠し持っている
+    - この行列について研究する「スペクトラルグラフ理論」という分野もある
+
+---
+
+## ラプラシアン行列
+
+### $L=D-W$
+式はシンプル
+※ $D$は次数を対角成分に並べた次数行列
+
+---
+
+## 例
+
+<div id="left">
+
+![](https://i.imgur.com/DuPNsmL.png)
+
+</div>
+
+<div id="right">
+
+$d = [2, 3, 2, 3, 3, 1]$より
+`$D = \begin{pmatrix}
+2 & 0 & 0 & 0 & 0 & 0 \\
+0 & 3 & 0 & 0 & 0 & 0 \\
+0 & 0 & 2 & 0 & 0 & 0 \\
+0 & 0 & 0 & 3 & 0 & 0 \\
+0 & 0 & 0 & 0 & 3 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1
+\end{pmatrix}$`
+
+</div>
+
+---
+
+`$\begin{eqnarray}
+L &=& D - W \\
+  &=& \begin{pmatrix}
+2 & -1 & 0 & 0 & -1 & 0 \\
+-1 & 3 & -1 & 0 & -1 & 0 \\
+0 & -1 & 2 & -1 & 0 & 0 \\
+0 & 0 & -1 & 3 & -1 & -1 \\
+-1 & -1 & 0 & -1 & 3 & 0 \\
+0 & 0 & 0 & -1 & 0 & 1 \\
+\end{pmatrix}
+\end{eqnarray}$`
+
+<font color="red">行和，列和，ともに0</font>
+
+---
+
+## 様々なグラフラプラシアン
+
+- 上記のものは非正規化ラプラシアン行列
+- 他にもラプラシアン行列は存在する
+    - 正規化ラプラシアン行列
+    - 酔歩正規化ラプラシアン行列 (Wikipediaより)
+
+---
+
+## スペクトラルクラスタリング
+
+---
+
+### Input
+- グラフ: $G$
+- クラスタ数: $k$
+
+### Output
+- クラスター: $A_1, \cdots, A_k$
+
+---
+
+## アルゴリズム
+
+1. $G$からラプラシアン行列を計算する
+2. $L$の固有値が小さい順に固有ベクトル$u_1, \cdots, u_k$を求める
+    - $L\boldsymbol{x} = \lambda\boldsymbol{x}$
+    - $\boldsymbol{x}$: 固有ベクトル
+    - $\lambda$: 固有値
+4. $u_1,\cdots,u_k$を横に並べて行列$U\in \mathbb{R}^{n\times k}$を作る
+    4. $U$は実数からなる$N\times k$の行列
+5. $U$の各行を特徴量だと思って，$K$-meansで$U$をクラスタリングする
+
+---
+
+## 手でスペクトラルクラスタリングしてみる
+
+---
+
+## グラフカットから見た
+## スペクトラルクラスタリング
+
+---
+
+なぜこれでうまくクラスタリングできるのか
+
+- 切断されるエッジが少なくする
+- クラスタ内のエッジは多くする
+
+![](https://i.imgur.com/4rr3p8c.png)
+
+---
+
+例えばこれを最小化する$k$クラスタに分割できる
+`$\displaystyle
+{\rm RatioCut}(A_1, \cdots, A_k):=\sum_{i=1}^k\frac{W(A_i, \bar A_i)}{|A_i|}$`
+
+※ $W$は切断するエッジの本数
+
+---
+
+$k=2$のときでも，
+
+`$\begin{eqnarray}
+A_i = \{1\}, \bar A_i = \{2, 3, 4, 5\} \\
+A_i = \{2\}, \bar A_i = \{1, 3, 4, 5\} \\
+A_i = \{1, 2\}, \bar A_i = \{3, 4, 5\}
+\end{eqnarray}$`
+
+など，いくつもの組み合わせを試さなければならない
+
+キーワード: NP-hard, 組み合わせ爆発
+
+---
+
+実はスペクトラルクラスタリングは
+RatioCutを単純にした問題の近似であることが
+示されている
+
+<small>証明は，「[A tutorial on Spectral Clustering](https://arxiv.org/pdf/0711.0189.pdf)」の5章</small>
+
+---
+
+## 注意
+- 解の品質に保証がない
+- スペクトラルクラスタリングが人気なのは，「性能が良いから」ではなく「アルゴリズムが単純だから」である
+
+
+---
+
+## ランダムウォークから見た
+## スペクトラルクラスタリング
+
+割愛します
+
+---
+
+## 摂動論から見た
+## スペクトラルクラスタリング
+
+割愛します
+
+---
+
+## 実用する上でのポイント
+
+---
+
+- どのように類似度行列を作成するか
+    - 作成方法
+    - パラメータ
+- 固有ベクトルの計算方法
+- $k$の決め方
+- どのラプラシアン行列を作るか
+
+など，実際にスペクトラルクラスタリングを実装する際のポイントが書かれている
+
+---
+
+## 今後の展望と参考文献
+
+- 様々な関連研究がある
+- ラプラシアン行列はクラスタリング以外の様々なタスクに応用できる
+
+---
+
+
+![](https://i.imgur.com/6vYk7c3.png)
+
+---
+
+## 来週どうするか
+
+- TF-IDF，Okapi
+- RNN
+    - NNを知ってないと難しい
+- Long Short Term Memory(LSTM)
+- Attension
+- GPT
+
+          </textarea>
+        </section>
+      </div>
+    </div>
+
+    <script src="../reveal.js/dist/reveal.js"></script>
+    <script src="../reveal.js/plugin/notes/notes.js"></script>
+    <script src="../reveal.js/plugin/markdown/markdown.js"></script>
+    <script src="../reveal.js/plugin/highlight/highlight.js"></script>
+    <script src="../reveal.js/plugin/math/math.js"></script>
+    <script>
+      // More info about initialization & config:
+      // - https://revealjs.com/initialization/
+      // - https://revealjs.com/config/
+      Reveal.initialize({
+              hash: true,
+
+              // Learn about plugins: https://revealjs.com/plugins/
+              plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.MathJax2 ]
+            });
+    </script>
+  </body>
+</html>
