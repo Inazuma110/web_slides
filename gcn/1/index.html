@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-    <title>reveal.js</title>
+    <title>グラフニューラルネットワーク PyTorchによる実装</title>
 
     <link rel="stylesheet" href="../../reveal.js/dist/reset.css">
     <link rel="stylesheet" href="../../reveal.js/dist/reveal.css">
@@ -22,79 +22,11 @@
   <body>
     <div class="reveal">
       <div class="slides">
-        <section data-markdown>
+        <!-- <section data-markdown data-separator="^\n---$" data-separator-vertical="^\n>>>$"> -->
+        <section data-markdown="./main.md" data-separator="^\n---$" data-separator-vertical="^\n>>>$">
           <textarea data-template>
 
-# グラフニューラルネットワーク
-## PyTorchによる実装
-### 村田剛志
-
-M2 伊藤
-
----
-
-## 今日扱うこと
-
-- 準備運動
-
-- 1章 グラフニューラルネットワークとは
-
-※ 実装については扱いません
-
----
-
-<section>
-## グラフとは？
-
-![](https://i.imgur.com/4t80uAw.png)
-
-[グラフ理論入門](https://qiita.com/maskot1977/items/e1819b7a1053eb9f7d61)より引用
-</section>
-
-
----
-
-<section>
-
-## グラフの汎用性
-
-<small>
-<div id="left">
-
-この世のものはたいていグラフ
-
-- SNSのフォロー関係
-- 地図
-- 分子構造
-- ゲーム理論
-- ディレクトリ構造
-- 構文
-- ニューラルネットワーク
-
-→様々な分野に応用可能
-
-</div>
-
-<div id="right">
-
-様々なアルゴリズムが利用可能
-
-- 最短距離
-    - ダイクストラ
-    - ワーシャル=フロイド法など
-- Graph Neural Network
-    - 埋め込みさえ得られれば色々できる
-- スペクトラルグラフ理論
-- グラフ分解
-- マッチング
-
-
-</div>
-</small>
-</section>
-
----
-
+            a
 
           </textarea>
         </section>
@@ -105,15 +37,16 @@ M2 伊藤
     <script src="../../reveal.js/plugin/notes/notes.js"></script>
     <script src="../../reveal.js/plugin/markdown/markdown.js"></script>
     <script src="../../reveal.js/plugin/highlight/highlight.js"></script>
+    <script src="../../reveal.js/plugin/math/math.js"></script>
     <script>
       // More info about initialization & config:
       // - https://revealjs.com/initialization/
       // - https://revealjs.com/config/
       Reveal.initialize({
               hash: true,
-
+              slideNumber: true,
               // Learn about plugins: https://revealjs.com/plugins/
-              plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+              plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath.KaTeX],
             });
     </script>
   </body>
